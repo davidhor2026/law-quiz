@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>법원직 민법 퀴즈</title>
+<style>
+body{background:#f2f2f2;font-family:Arial;text-align:center;padding:20px;}
+.box{background:white;max-width:540px;margin:auto;padding:25px;border-radius:20px;}
+img{width:180px;border-radius:20px;}
+button{font-size:18px;padding:10px 18px;margin:7px;border:none;border-radius:12px;background:#2f80ed;color:white;cursor:pointer;}
+.red{background:#e74c3c}.gray{background:#777}.green{background:#27ae60}
+.question{font-size:21px;margin-top:18px;line-height:1.5;}
+#speech,#speechBox{background:#fff4cc;padding:12px;border-radius:15px;margin:12px 0;font-weight:bold;}
+#number,#score,#categoryText,#sourceText{color:#777;margin-top:8px;}
+#result{margin-top:18px;font-size:22px;font-weight:bold;}
+#explanation{margin-top:15px;color:#555;line-height:1.5;}
+#quizScreen,#finalScreen,#wrongNoteScreen{display:none;}
+.wrongItem{text-align:left;background:#f7f7f7;margin:10px;padding:12px;border-radius:12px;}
+</style>
+</head>
+
+<body>
+<div class="box">
+<h1>법원직 민법 퀴즈</h1>
+
+<div id="startScreen">
+    <img src="teacher.png">
+    <div id="speech">문제 데이터를 불러오는 중입니다...</div>
+
+    <button onclick="startQuiz('전체')">전체 랜덤</button>
+    <button onclick="startQuiz('민법총칙')">민법총칙</button>
+    <button onclick="startQuiz('물권법')">물권법</button>
+    <button onclick="startQuiz('채권법')">채권법</button>
+    <button onclick="startQuiz('가족법')">가족법</button>
+
+    <br>
+    <button class="red" onclick="showWrongNote()">오답노트 보기</button>
+    <button class="green" onclick="startWrongQuiz()">오답만 다시 풀기</button>
+</div>
+
+<div id="quizScreen">
+    <img id="teacherImage" src="teacher.png">
+    <div id="speechBox">문제를 풀어보세요.</div>
+    <div id="categoryText"></div>
+    <div id="sourceText"></div>
+    <div id="number"></div>
+    <div id="score"></div>
+
+    <div class="question" id="question"></div>
+
+    <button onclick="checkAnswer('O')">O</button>
+    <button onclick="checkAnswer('X')">X</button>
+
+    <br>
+    <button onclick="nextQuestion()">다음 문제</button>
+    <button class="gray" onclick="goHome()">처음으로</button>
+
+    <div id="result"></div>
+    <div id="explanation"></div>
+</div>
+
+<div id="finalScreen">
+    <img src="correct.png">
+    <h2>퀴즈 완료!</h2>
+    <div id="finalScore" style="font-size:24px;font-weight:bold;"></div>
+    <p id="finalMessage"></p>
+    <button onclick="goHome()">처음으로</button>
+    <button onclick="restartSameQuiz()">다시 풀기</button>
+    <button class="red" onclick="showWrongNote()">오답노트 보기</button>
+</div>
+
+<div id="wrongNoteScreen">
+    <h2>오답노트</h2>
+    <div id="wrongList"></div>
+    <button class="green" onclick="startWrongQuiz()">오답만 다시 풀기</button>
+    <button class="red" onclick="clearWrongNote()">오답노트 삭제</button>
+    <button onclick="goHome()">처음으로</button>
+</div>
+
+</div>
+
+<script>
+let quizData = [];
+let selectedQuiz = [];
+let currentQuestion = 0;
+let score = 0;
+let answered = false;
+let quizMode = "일반";
+
+window.onload = function(){
+    loadCSVAutomatically();
+};
+
+function loadCSVAutomatically(){
+    fetch("questions.csv")
+    .then(response => {
+        if(!response.ok){
+            throw new Error("questions.csv 파일을 찾을 수 없습니다.");
+        }
+        return response.text();
+    })
+    .then(text => {
+        quizData = parseCSV(text);
+
+        document.getElementById("speech").innerHTML =
+        "문제 " + quizData.length + "개를 불러왔습니다. 영역을 선택하세요.";
+    })
+    .catch(error => {
+        document.getElementById("speech").innerHTML =
+        "문제 파일을 자동으로 불러오지 못했습니다. Live Server 또는 웹호스팅에서 실행해 주세요.";
+
+        alert("questions.csv 자동 로딩 실패: 파일 더블클릭 실행에서는 작동하지 않을 수 있습니다.");
+    });
+}
+
+function parseCSV(text){
+    const lines = text.trim().split(/\r?\n/);
+    const data = [];
+
+    for(let i = 1; i < lines.length; i++){
+        const row = lines[i].split(",");
+
+        if(row.length >= 5){
+            data.push({
+                category: row[0].trim(),
+                source: row[1].trim(),
+                question: row[2].trim(),
+                answer: row[3].trim(),
+                explanation: row.slice(4).join(",").trim()
+            });
+        }
+    }
+
+    return data;
+}
+
+function shuffle(array){
+    return array.sort(() => Math.random() - 0.5);
+}
+
+function startQuiz(category){
+    if(quizData.length === 0){
+        alert("문제 데이터를 아직 불러오지 못했습니다.");
+        return;
+    }
+
+    quizMode = category;
+
+    if(category === "전체"){
+        selectedQuiz = shuffle([...quizData]);
+    }else{
+        selectedQuiz = shuffle(quizData.filter(q => q.category === category));
+    }
+
+    if(selectedQuiz.length === 0){
+        alert("해당 카테고리의 문제가 없습니다.");
+        return;
+    }
+
+    startSelectedQuiz();
+}
+
+function startWrongQuiz(){
+    const wrongNote = JSON.parse(localStorage.getItem("wrongNote")) || [];
+
+    if(wrongNote.length === 0){
+        alert("저장된 오답이 없습니다.");
+        return;
+    }
+
+    quizMode = "오답노트";
+    selectedQuiz = shuffle([...wrongNote]);
+
+    startSelectedQuiz();
+}
+
+function startSelectedQuiz(){
+    currentQuestion = 0;
+    score = 0;
+    answered = false;
+
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("wrongNoteScreen").style.display = "none";
+    document.getElementById("finalScreen").style.display = "none";
+    document.getElementById("quizScreen").style.display = "block";
+
+    loadQuestion();
+}
+
+function loadQuestion(){
+    let q = selectedQuiz[currentQuestion];
+
+    document.getElementById("teacherImage").src = "teacher.png";
+    document.getElementById("speechBox").innerHTML = "문장을 끝까지 읽고 판단하세요.";
+    document.getElementById("categoryText").innerHTML = "분야: " + q.category;
+    document.getElementById("sourceText").innerHTML = "검수표시: " + q.source;
+    document.getElementById("number").innerHTML =
+    "문제 " + (currentQuestion + 1) + " / " + selectedQuiz.length + " (" + quizMode + ")";
+
+    document.getElementById("score").innerHTML =
+    "점수: " + score + " / " + selectedQuiz.length;
+
+    document.getElementById("question").innerHTML = q.question;
+    document.getElementById("result").innerHTML = "";
+    document.getElementById("explanation").innerHTML = "";
+
+    answered = false;
+}
+
+function checkAnswer(answer){
+    if(answered){
+        return;
+    }
+
+    answered = true;
+    let q = selectedQuiz[currentQuestion];
+
+    if(answer === q.answer){
+        score++;
+        document.getElementById("result").innerHTML = "정답입니다!";
+        document.getElementById("teacherImage").src = "correct.png";
+        document.getElementById("speechBox").innerHTML = "좋습니다. 정답입니다.";
+
+        if(quizMode === "오답노트"){
+            removeFromWrongNote(q);
+        }
+
+    }else{
+        document.getElementById("result").innerHTML = "오답입니다.";
+        document.getElementById("teacherImage").src = "wrong.png";
+        document.getElementById("speechBox").innerHTML = "오답입니다. 오답노트에 저장했습니다.";
+        saveWrongQuestion(q);
+    }
+
+    document.getElementById("score").innerHTML =
+    "점수: " + score + " / " + selectedQuiz.length;
+
+    document.getElementById("explanation").innerHTML =
+    "정답: " + q.answer + "<br>" + q.explanation;
+}
+
+function nextQuestion(){
+    if(!answered){
+        alert("먼저 O 또는 X를 선택하세요.");
+        return;
+    }
+
+    if(currentQuestion === selectedQuiz.length - 1){
+        showFinalScreen();
+        return;
+    }
+
+    currentQuestion++;
+    loadQuestion();
+}
+
+function showFinalScreen(){
+    document.getElementById("quizScreen").style.display = "none";
+    document.getElementById("finalScreen").style.display = "block";
+
+    document.getElementById("finalScore").innerHTML =
+    "최종 점수: " + score + " / " + selectedQuiz.length;
+
+    let percent = Math.round((score / selectedQuiz.length) * 100);
+
+    if(percent >= 90){
+        document.getElementById("finalMessage").innerHTML =
+        "매우 좋습니다. 안정적으로 이해하고 있습니다.";
+    }else if(percent >= 70){
+        document.getElementById("finalMessage").innerHTML =
+        "좋습니다. 오답노트를 반복하면 더 좋아집니다.";
+    }else{
+        document.getElementById("finalMessage").innerHTML =
+        "오답노트 중심으로 다시 반복하는 것이 좋습니다.";
+    }
+}
+
+function restartSameQuiz(){
+    selectedQuiz = shuffle([...selectedQuiz]);
+    currentQuestion = 0;
+    score = 0;
+    answered = false;
+
+    document.getElementById("finalScreen").style.display = "none";
+    document.getElementById("quizScreen").style.display = "block";
+
+    loadQuestion();
+}
+
+function saveWrongQuestion(q){
+    let wrongNote = JSON.parse(localStorage.getItem("wrongNote")) || [];
+    let exists = wrongNote.some(item => item.question === q.question);
+
+    if(!exists){
+        wrongNote.push(q);
+        localStorage.setItem("wrongNote", JSON.stringify(wrongNote));
+    }
+}
+
+function removeFromWrongNote(q){
+    let wrongNote = JSON.parse(localStorage.getItem("wrongNote")) || [];
+    wrongNote = wrongNote.filter(item => item.question !== q.question);
+    localStorage.setItem("wrongNote", JSON.stringify(wrongNote));
+}
+
+function showWrongNote(){
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("quizScreen").style.display = "none";
+    document.getElementById("finalScreen").style.display = "none";
+    document.getElementById("wrongNoteScreen").style.display = "block";
+
+    let wrongNote = JSON.parse(localStorage.getItem("wrongNote")) || [];
+    let html = "";
+
+    if(wrongNote.length === 0){
+        html = "<p>아직 저장된 오답이 없습니다.</p>";
+    }else{
+        wrongNote.forEach((q, index) => {
+            html += "<div class='wrongItem'>";
+            html += "<b>" + (index + 1) + ". [" + q.category + "]</b><br>";
+            html += "<span style='color:#777;'>" + q.source + "</span><br>";
+            html += q.question + "<br>";
+            html += "<b>정답: " + q.answer + "</b><br>";
+            html += "<span style='color:#555;'>" + q.explanation + "</span>";
+            html += "</div>";
+        });
+    }
+
+    document.getElementById("wrongList").innerHTML = html;
+}
+
+function clearWrongNote(){
+    const ok = confirm("오답노트를 모두 삭제할까요?");
+
+    if(ok){
+        localStorage.removeItem("wrongNote");
+        showWrongNote();
+    }
+}
+
+function goHome(){
+    document.getElementById("startScreen").style.display = "block";
+    document.getElementById("quizScreen").style.display = "none";
+    document.getElementById("finalScreen").style.display = "none";
+    document.getElementById("wrongNoteScreen").style.display = "none";
+}
+</script>
+
+</body>
+</html>
