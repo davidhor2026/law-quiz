@@ -3,19 +3,127 @@
 <head>
 <meta charset="UTF-8">
 <title>법원직 민법 퀴즈</title>
+
 <style>
-body{background:#f2f2f2;font-family:Arial;text-align:center;padding:20px;}
-.box{background:white;max-width:540px;margin:auto;padding:25px;border-radius:20px;}
-img{width:180px;border-radius:20px;}
-button{font-size:18px;padding:10px 18px;margin:7px;border:none;border-radius:12px;background:#2f80ed;color:white;cursor:pointer;}
-.red{background:#e74c3c}.gray{background:#777}.green{background:#27ae60}
-.question{font-size:21px;margin-top:18px;line-height:1.5;}
-#speech,#speechBox{background:#fff4cc;padding:12px;border-radius:15px;margin:12px 0;font-weight:bold;}
-#number,#score,#categoryText,#sourceText{color:#777;margin-top:8px;}
-#result{margin-top:18px;font-size:22px;font-weight:bold;}
-#explanation{margin-top:15px;color:#555;line-height:1.5;}
-#quizScreen,#finalScreen,#wrongNoteScreen{display:none;}
-.wrongItem{text-align:left;background:#f7f7f7;margin:10px;padding:12px;border-radius:12px;}
+body{
+    background:#f2f2f2;
+    font-family:Arial;
+    text-align:center;
+    padding:8px;
+    margin:0;
+}
+
+.box{
+    background:white;
+    width:94%;
+    max-width:720px;
+    margin:auto;
+    padding:22px;
+    border-radius:22px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08);
+}
+
+img{
+    width:220px;
+    border-radius:20px;
+    max-width:90%;
+}
+
+button{
+    font-size:22px;
+    padding:14px 24px;
+    margin:8px;
+    border:none;
+    border-radius:14px;
+    background:#2f80ed;
+    color:white;
+    cursor:pointer;
+    width:90%;
+    max-width:340px;
+}
+
+.red{background:#e74c3c;}
+.gray{background:#777;}
+.green{background:#27ae60;}
+
+.question{
+    font-size:26px;
+    margin-top:22px;
+    line-height:1.7;
+    font-weight:bold;
+    word-break:keep-all;
+}
+
+#speech,
+#speechBox{
+    background:#fff4cc;
+    padding:14px;
+    border-radius:16px;
+    margin:14px 0;
+    font-weight:bold;
+    font-size:20px;
+    line-height:1.5;
+}
+
+#number,
+#score,
+#categoryText,
+#sourceText{
+    color:#777;
+    margin-top:10px;
+    font-size:18px;
+}
+
+#result{
+    margin-top:20px;
+    font-size:28px;
+    font-weight:bold;
+}
+
+#explanation{
+    margin-top:18px;
+    color:#555;
+    line-height:1.7;
+    font-size:20px;
+    text-align:left;
+}
+
+#quizScreen,
+#finalScreen,
+#wrongNoteScreen{
+    display:none;
+}
+
+.wrongItem{
+    text-align:left;
+    background:#f7f7f7;
+    margin:12px;
+    padding:14px;
+    border-radius:14px;
+    line-height:1.6;
+    font-size:18px;
+}
+
+h1{
+    font-size:34px;
+    margin-bottom:18px;
+}
+
+h2{
+    font-size:30px;
+}
+
+@media (max-width:600px){
+    h1{font-size:30px;}
+    .question{font-size:28px;}
+    button{
+        font-size:24px;
+        padding:16px 20px;
+    }
+    #speech,
+    #speechBox{font-size:22px;}
+    #explanation{font-size:22px;}
+}
 </style>
 </head>
 
@@ -67,7 +175,7 @@ button{font-size:18px;padding:10px 18px;margin:7px;border:none;border-radius:12p
 <div id="finalScreen">
     <img src="correct.png">
     <h2>퀴즈 완료!</h2>
-    <div id="finalScore" style="font-size:24px;font-weight:bold;"></div>
+    <div id="finalScore" style="font-size:28px;font-weight:bold;"></div>
     <p id="finalMessage"></p>
     <button onclick="goHome()">처음으로</button>
     <button onclick="restartSameQuiz()">다시 풀기</button>
