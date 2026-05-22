@@ -27,6 +27,11 @@ button{font-size:18px;padding:10px 18px;margin:7px;border:none;border-radius:12p
     <img src="teacher.png">
     <div id="speech">문제 데이터를 불러오는 중입니다...</div>
 
+    <button class="green" onclick="turnVoiceOn()">음성 켜기</button>
+    <button class="gray" onclick="turnVoiceOff()">음성 끄기</button>
+
+    <br>
+
     <button onclick="startQuiz('전체')">전체 랜덤</button>
     <button onclick="startQuiz('민법총칙')">민법총칙</button>
     <button onclick="startQuiz('물권법')">물권법</button>
@@ -86,10 +91,36 @@ let currentQuestion = 0;
 let score = 0;
 let answered = false;
 let quizMode = "일반";
+let voiceOn = false;
 
 window.onload = function(){
     loadCSVAutomatically();
 };
+
+function speak(text){
+    if(!voiceOn){ return; }
+
+    window.speechSynthesis.cancel();
+
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.lang = "ko-KR";
+    msg.rate = 1;
+    msg.pitch = 1;
+
+    window.speechSynthesis.speak(msg);
+}
+
+function turnVoiceOn(){
+    voiceOn = true;
+    speak("음성 안내를 시작합니다.");
+    alert("음성 안내가 켜졌습니다.");
+}
+
+function turnVoiceOff(){
+    voiceOn = false;
+    window.speechSynthesis.cancel();
+    alert("음성 안내가 꺼졌습니다.");
+}
 
 function loadCSVAutomatically(){
     fetch("questions.csv")
@@ -107,9 +138,9 @@ function loadCSVAutomatically(){
     })
     .catch(error => {
         document.getElementById("speech").innerHTML =
-        "문제 파일을 자동으로 불러오지 못했습니다. Live Server 또는 웹호스팅에서 실행해 주세요.";
+        "문제 파일을 자동으로 불러오지 못했습니다. GitHub Pages 주소에서 실행해 주세요.";
 
-        alert("questions.csv 자동 로딩 실패: 파일 더블클릭 실행에서는 작동하지 않을 수 있습니다.");
+        alert("questions.csv 자동 로딩 실패");
     });
 }
 
@@ -157,6 +188,7 @@ function startQuiz(category){
         return;
     }
 
+    speak(category + " 퀴즈를 시작합니다.");
     startSelectedQuiz();
 }
 
@@ -171,6 +203,7 @@ function startWrongQuiz(){
     quizMode = "오답노트";
     selectedQuiz = shuffle([...wrongNote]);
 
+    speak("오답노트 퀴즈를 시작합니다.");
     startSelectedQuiz();
 }
 
@@ -205,6 +238,8 @@ function loadQuestion(){
     document.getElementById("explanation").innerHTML = "";
 
     answered = false;
+
+    speak("문제입니다. " + q.question);
 }
 
 function checkAnswer(answer){
@@ -221,6 +256,8 @@ function checkAnswer(answer){
         document.getElementById("teacherImage").src = "correct.png";
         document.getElementById("speechBox").innerHTML = "좋습니다. 정답입니다.";
 
+        speak("정답입니다.");
+
         if(quizMode === "오답노트"){
             removeFromWrongNote(q);
         }
@@ -229,7 +266,9 @@ function checkAnswer(answer){
         document.getElementById("result").innerHTML = "오답입니다.";
         document.getElementById("teacherImage").src = "wrong.png";
         document.getElementById("speechBox").innerHTML = "오답입니다. 오답노트에 저장했습니다.";
+
         saveWrongQuestion(q);
+        speak("오답입니다. 정답은 " + q.answer + "입니다. 해설을 확인하세요.");
     }
 
     document.getElementById("score").innerHTML =
@@ -262,17 +301,18 @@ function showFinalScreen(){
     "최종 점수: " + score + " / " + selectedQuiz.length;
 
     let percent = Math.round((score / selectedQuiz.length) * 100);
+    let message = "";
 
     if(percent >= 90){
-        document.getElementById("finalMessage").innerHTML =
-        "매우 좋습니다. 안정적으로 이해하고 있습니다.";
+        message = "매우 좋습니다. 안정적으로 이해하고 있습니다.";
     }else if(percent >= 70){
-        document.getElementById("finalMessage").innerHTML =
-        "좋습니다. 오답노트를 반복하면 더 좋아집니다.";
+        message = "좋습니다. 오답노트를 반복하면 더 좋아집니다.";
     }else{
-        document.getElementById("finalMessage").innerHTML =
-        "오답노트 중심으로 다시 반복하는 것이 좋습니다.";
+        message = "오답노트 중심으로 다시 반복하는 것이 좋습니다.";
     }
+
+    document.getElementById("finalMessage").innerHTML = message;
+    speak("퀴즈가 완료되었습니다. 최종 점수는 " + score + "점입니다.");
 }
 
 function restartSameQuiz(){
@@ -339,6 +379,8 @@ function clearWrongNote(){
 }
 
 function goHome(){
+    window.speechSynthesis.cancel();
+
     document.getElementById("startScreen").style.display = "block";
     document.getElementById("quizScreen").style.display = "none";
     document.getElementById("finalScreen").style.display = "none";
